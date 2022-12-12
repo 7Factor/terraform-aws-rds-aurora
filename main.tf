@@ -61,13 +61,3 @@ resource "aws_rds_cluster_instance" "aurora_db" {
     ignore_changes  = [engine_version]
   }
 }
-
-moved {
-  from = aws_rds_cluster_instance.aurora_db_delete
-  to   = aws_rds_cluster_instance.aurora_db
-}
-
-moved {
-  from = aws_rds_cluster_instance.aurora_db_no_delete
-  to   = aws_rds_cluster_instance.aurora_db
-}
