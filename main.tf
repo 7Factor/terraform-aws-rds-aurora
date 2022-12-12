@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">=0.12.3"
+  required_version = ">=1.1"
 }
 
 # Look up the primary VPC
@@ -41,11 +41,7 @@ resource "aws_rds_cluster" "aurora_cluster" {
   }
 }
 
-# why are there two instance blocks you might ask?
-# well Timmy that's because Terraform parses and handles variables before interpolations can be processed
-# dont ask me, I didn't design Terraform, and am not smart enough to anyways. 
-# look here for more context: https://github.com/hashicorp/terraform/issues/10730
-resource "aws_rds_cluster_instance" "aurora_db_delete" {
+resource "aws_rds_cluster_instance" "aurora_db" {
   count              = var.deletion_protection ? 0 : var.db_instance_count
   identifier         = "${var.db_name}-instance-${count.index + 1}"
   cluster_identifier = aws_rds_cluster.aurora_cluster.cluster_identifier
@@ -62,27 +58,6 @@ resource "aws_rds_cluster_instance" "aurora_db_delete" {
 
   lifecycle {
     prevent_destroy = false
-    ignore_changes  = [engine_version]
-  }
-}
-
-resource "aws_rds_cluster_instance" "aurora_db_no_delete" {
-  count              = var.deletion_protection ? var.db_instance_count : 0
-  identifier         = "${var.db_name}-instance-${count.index + 1}"
-  cluster_identifier = aws_rds_cluster.aurora_cluster.cluster_identifier
-
-  publicly_accessible = false
-
-  engine_version = var.engine_version
-  engine         = var.engine
-
-  db_subnet_group_name = aws_db_subnet_group.rds_subnet_group.name
-  instance_class       = var.db_instance_class
-
-  performance_insights_enabled = var.performance_insights_enabled
-
-  lifecycle {
-    prevent_destroy = true
     ignore_changes  = [engine_version]
   }
 }
