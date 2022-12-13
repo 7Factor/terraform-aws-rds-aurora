@@ -35,10 +35,6 @@ resource "aws_rds_cluster" "aurora_cluster" {
   master_username = var.db_master_username
   master_password = var.db_master_password
   port            = var.db_port
-
-  lifecycle {
-    ignore_changes = [engine_version]
-  }
 }
 
 resource "aws_rds_cluster_instance" "aurora_db" {
@@ -55,9 +51,4 @@ resource "aws_rds_cluster_instance" "aurora_db" {
   instance_class       = var.db_instance_class
 
   performance_insights_enabled = var.performance_insights_enabled
-
-  lifecycle {
-    prevent_destroy = false
-    ignore_changes  = [engine_version]
-  }
 }
