@@ -116,3 +116,9 @@ variable "preferred_maintenance_window" {
   default     = null
   description = "The weekly time range during which system maintenance can occur, in (UTC) e.g., wed:04:00-wed:04:30. Cannot overlap backup time. Uses aws_rds_cluster default."
 }
+
+variable "apply_immediately" {
+  type        = bool
+  default     = false
+  description = "Specifies whether any cluster modifications are applied immediately, or during the next maintenance window. Defaults to false."
+}
