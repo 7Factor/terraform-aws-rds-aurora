@@ -60,7 +60,7 @@ module "rds_cluster" {
 
 This is the new home of the terraform-rds-aurora module. It was copied here so that changes wouldn't break services
 relying on the old repo. Going forward, you should endeavour to use this version of the module. More specifically, use
-the [module from the Terraform registry](https://registry.terraform.io/modules/7Factor/s3-website/aws/latest). This way,
+the [module from the Terraform registry](https://registry.terraform.io/modules/7Factor/rds-aurora/aws/latest). This way,
 you can select a range of versions to use in your service which allows us to make potentially breaking changes to the
 module without breaking your service.
 
