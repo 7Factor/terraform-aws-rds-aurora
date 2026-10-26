@@ -24,7 +24,7 @@ data "aws_rds_cluster" "database" {
   lifecycle {
     postcondition {
       condition     = contains(["aurora", "aurora-mysql", "mysql"], self.engine)
-      error_message = "The cluster's engine is ${self.engine}, not MySQL. Use rds_postgres_credentials for PostgreSQL clusters."
+      error_message = "The cluster's engine is ${self.engine}, not MySQL. Use rds-postgres-credentials for PostgreSQL clusters."
     }
   }
 }
