@@ -122,3 +122,28 @@ variable "apply_immediately" {
   default     = false
   description = "Specifies whether any cluster modifications are applied immediately, or during the next maintenance window. Defaults to false."
 }
+
+# Credentials
+variable "credentials" {
+  type        = list(string)
+  default     = []
+  description = "Usernames to create database credentials for. Each gets a database user with a generated password and a Secrets Manager secret holding its credentials. Requires the matching database provider to be configured; see the README. Defaults to none, which creates nothing."
+}
+
+variable "credential_secret_name_format" {
+  type        = string
+  default     = "%s"
+  description = "A format() string that turns a credential's username into its secret name. For example \"%s-app-user\" makes \"myapp-api\" into \"myapp-api-app-user\". Defaults to the username as-is."
+}
+
+variable "credential_privileges" {
+  type        = list(string)
+  default     = ["SELECT", "INSERT", "UPDATE", "DELETE"]
+  description = "The privileges every credential gets on the database (on its tables, for PostgreSQL). Defaults to SELECT, INSERT, UPDATE and DELETE."
+}
+
+variable "credential_secret_recovery_window_in_days" {
+  type        = number
+  default     = 30
+  description = "Days Secrets Manager waits before deleting a credential's secret once it's removed. Can be 0 (delete immediately) or 7 to 30. Defaults to 30."
+}

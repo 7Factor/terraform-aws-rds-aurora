@@ -56,6 +56,88 @@ module "rds_cluster" {
 }
 ```
 
+## Database credentials
+
+The module can optionally create database credentials, for example a login per app so apps don't use the master user.
+Pass a list of usernames as `credentials`. For each one the module creates a database user with a generated password,
+grants it `credential_privileges` on the database, and stores the credentials in a Secrets Manager secret. The
+`credential_secret_arns` output maps each username to its secret's ARN. Leave `credentials` empty (the default) and
+none of this is created.
+
+The secret uses the same JSON keys as RDS-managed secrets: `engine`, `host`, `port`, `dbname`, `username` and
+`password`.
+
+### Prerequisites
+
+Creating users means **terraform has to connect to the database when you plan and apply.** You configure the provider
+in your own root module: `petoju/mysql` for `aurora` / `aurora-mysql`, or `cyrilgdn/postgresql` for
+`aurora-postgresql`, logged in as a user that can create other users (usually the master user). If the database is in
+private subnets, open an SSH tunnel through a bastion host before running terraform and point the provider at the
+tunnel.
+
+Because the provider connects at plan time, the cluster must already exist. When building a brand new environment,
+apply the cluster first with an empty `credentials` list (or with `-target`), then add the credentials.
+
+### Example
+
+```hcl-terraform
+terraform {
+  required_providers {
+    mysql = {
+      source  = "petoju/mysql"
+      version = "~> 3"
+    }
+  }
+}
+
+# Connects through an SSH tunnel to the cluster on localhost:3306
+provider "mysql" {
+  endpoint = "127.0.0.1:3306"
+  username = "myapp"
+  password = var.db_password
+}
+
+module "rds_cluster" {
+  source  = "7factor/rds-aurora/aws"
+  version = "~> 2.2"
+
+  # ...the usual cluster settings...
+
+  credentials                   = ["myapp-api", "myapp-worker"]
+  credential_secret_name_format = "%s-db"
+}
+```
+
+For PostgreSQL, configure the `postgresql` provider instead and set `superuser = false` in it, since the RDS master
+user isn't a real superuser. PostgreSQL users are also granted on tables the master user creates later, since
+migrations usually run as master.
+
+### Reading a secret from ECS
+
+Give the task execution role `secretsmanager:GetSecretValue` on the secret, then reference its keys in the container
+definition:
+
+```hcl-terraform
+secrets = [
+  { name = "DATABASE_USER", valueFrom = "${module.rds_cluster.credential_secret_arns["myapp-api"]}:username::" },
+  { name = "DATABASE_PASSWORD", valueFrom = "${module.rds_cluster.credential_secret_arns["myapp-api"]}:password::" },
+]
+```
+
+ECS only reads the secret when a task starts, so running tasks keep the old password until they're replaced.
+
+### Things to know
+
+* MySQL usernames can be at most 32 characters.
+* The generated passwords are stored in terraform state, so treat your state bucket like it holds secrets (it already
+  does if your master password is in there).
+* Removing a username drops the user and schedules its secret for deletion. A secret waiting to be deleted blocks
+  creating a new one with the same name, so set `credential_secret_recovery_window_in_days = 0` for throwaway
+  environments.
+* To change a password, replace it, e.g. for MySQL
+  `terraform apply -replace='module.rds_cluster.module.mysql_credential["myapp-api"].random_password.credential'`,
+  then redeploy whatever uses it. Anything still using the old password loses access as soon as the apply finishes.
+
 ## Migrating from github.com/7factor/terraform-rds-aurora
 
 This is the new home of the terraform-rds-aurora module. It was copied here so that changes wouldn't break services
