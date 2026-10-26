@@ -56,6 +56,16 @@ module "rds_cluster" {
 }
 ```
 
+## Database credentials
+
+To give an app or a person its own database login instead of using the master user, use the submodule for your engine:
+
+* [`rds-mysql-credentials`](modules/rds-mysql-credentials/README.md) for `aurora` / `aurora-mysql`
+* [`rds-postgres-credentials`](modules/rds-postgres-credentials/README.md) for `aurora-postgresql`
+
+Call it once per credential, pointing it at this module's `db_cluster_id` output. Each call creates a database user and
+a Secrets Manager secret holding its credentials. Each submodule only requires its own database provider.
+
 ## Migrating from github.com/7factor/terraform-rds-aurora
 
 This is the new home of the terraform-rds-aurora module. It was copied here so that changes wouldn't break services
