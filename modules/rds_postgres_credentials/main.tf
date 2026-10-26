@@ -24,7 +24,7 @@ data "aws_rds_cluster" "database" {
   lifecycle {
     postcondition {
       condition     = contains(["aurora-postgresql", "postgres"], self.engine)
-      error_message = "The cluster's engine is ${self.engine}, not PostgreSQL. Use the rds_credentials mysql submodule for MySQL clusters."
+      error_message = "The cluster's engine is ${self.engine}, not PostgreSQL. Use rds_mysql_credentials for MySQL clusters."
     }
   }
 }
@@ -105,17 +105,28 @@ resource "postgresql_default_privileges" "sequences" {
   privileges  = local.sequence_privileges
 }
 
-module "secret" {
-  source = "../.."
-
+resource "aws_secretsmanager_secret" "credential" {
   name                    = var.name
   recovery_window_in_days = var.recovery_window_in_days
-  credential = {
+}
+
+# Uses the same JSON keys as RDS-managed secrets, so anything that already knows how to read those (rotation lambdas,
+# drivers, etc.) can read these too
+resource "aws_secretsmanager_secret_version" "credential" {
+  secret_id = aws_secretsmanager_secret.credential.id
+  secret_string = jsonencode({
     engine   = "postgres"
     host     = data.aws_rds_cluster.database.endpoint
     port     = data.aws_rds_cluster.database.port
     dbname   = local.database
     username = postgresql_role.credential.name
     password = random_password.credential.result
+  })
+}
+
+data "aws_iam_policy_document" "read_credential" {
+  statement {
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [aws_secretsmanager_secret.credential.arn]
   }
 }

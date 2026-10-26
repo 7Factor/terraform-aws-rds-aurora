@@ -58,11 +58,10 @@ module "rds_cluster" {
 
 ## Database credentials
 
-To give an app or a person its own database login instead of using the master user, use the
-[`rds_credentials`](modules/rds_credentials/README.md) submodule for your engine:
+To give an app or a person its own database login instead of using the master user, use the submodule for your engine:
 
-* [`rds_credentials/modules/mysql`](modules/rds_credentials/modules/mysql/README.md) for `aurora` / `aurora-mysql`
-* [`rds_credentials/modules/postgres`](modules/rds_credentials/modules/postgres/README.md) for `aurora-postgresql`
+* [`rds_mysql_credentials`](modules/rds_mysql_credentials/README.md) for `aurora` / `aurora-mysql`
+* [`rds_postgres_credentials`](modules/rds_postgres_credentials/README.md) for `aurora-postgresql`
 
 Call it once per credential, pointing it at this module's `db_cluster_id` output. Each call creates a database user and
 a Secrets Manager secret holding its credentials. Each submodule only requires its own database provider.

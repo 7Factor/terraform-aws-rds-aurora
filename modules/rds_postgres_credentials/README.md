@@ -1,10 +1,10 @@
-# PostgreSQL submodule for RDS Credentials
+# PostgreSQL Credentials submodule for RDS Aurora
 
 Creates one set of database credentials in an existing Aurora PostgreSQL cluster: a login role with a generated
 password and the privileges you ask for, plus an AWS Secrets Manager secret holding the credentials. Whatever uses
 them (an app, a person, a reporting tool) reads the secret instead of having a password passed around in CI variables.
 
-Call it once per credential you want. For Aurora MySQL, use the [`mysql` submodule](../mysql/README.md)
+Call it once per credential you want. For Aurora MySQL, use [`rds_mysql_credentials`](../rds_mysql_credentials/README.md)
 instead. Each module only requires its own database provider, so you never download or configure one you don't use.
 
 The secret uses the same JSON keys as RDS-managed secrets: `engine`, `host`, `port`, `dbname`, `username` and
@@ -52,7 +52,7 @@ module "rds_cluster" {
 }
 
 module "api_credentials" {
-  source  = "7Factor/rds-aurora/aws//modules/rds_credentials/modules/postgres"
+  source  = "7Factor/rds-aurora/aws//modules/rds_postgres_credentials"
   version = "~> 2"
 
   database_identifier = module.rds_cluster.db_cluster_id
@@ -61,7 +61,7 @@ module "api_credentials" {
 }
 ```
 
-See the [`mysql` submodule readme](../mysql/README.md#reading-the-secret-from-ecs) for reading
+See the [`rds_mysql_credentials` readme](../rds_mysql_credentials/README.md#reading-the-secret-from-ecs) for reading
 the secret from ECS; it works the same way.
 
 ## Things to know

@@ -1,10 +1,10 @@
-# MySQL submodule for RDS Credentials
+# MySQL Credentials submodule for RDS Aurora
 
 Creates one set of database credentials in an existing Aurora MySQL cluster: a MySQL user with a generated password and
 the privileges you ask for, plus an AWS Secrets Manager secret holding the credentials. Whatever uses them (an app, a
 person, a reporting tool) reads the secret instead of having a password passed around in CI variables.
 
-Call it once per credential you want. For Aurora PostgreSQL, use the [`postgres` submodule](../postgres/README.md)
+Call it once per credential you want. For Aurora PostgreSQL, use [`rds_postgres_credentials`](../rds_postgres_credentials/README.md)
 instead. Each module only requires its own database provider, so you never download or configure one you don't use.
 
 The secret uses the same JSON keys as RDS-managed secrets: `engine`, `host`, `port`, `dbname`, `username` and
@@ -50,7 +50,7 @@ module "rds_cluster" {
 }
 
 module "api_credentials" {
-  source  = "7Factor/rds-aurora/aws//modules/rds_credentials/modules/mysql"
+  source  = "7Factor/rds-aurora/aws//modules/rds_mysql_credentials"
   version = "~> 2"
 
   database_identifier = module.rds_cluster.db_cluster_id
@@ -59,7 +59,7 @@ module "api_credentials" {
 }
 
 module "support_credentials" {
-  source  = "7Factor/rds-aurora/aws//modules/rds_credentials/modules/mysql"
+  source  = "7Factor/rds-aurora/aws//modules/rds_mysql_credentials"
   version = "~> 2"
 
   database_identifier     = module.rds_cluster.db_cluster_id
