@@ -22,8 +22,3 @@ output "db_cluster_id" {
   value       = aws_rds_cluster.aurora_cluster.id
   description = "The id of the database cluster."
 }
-
-output "credential_secret_arns" {
-  value       = { for username, secret in module.credential_secret : username => secret.secret_arn }
-  description = "Map of credential username to the ARN of the secret holding it. Empty when no credentials were requested."
-}
