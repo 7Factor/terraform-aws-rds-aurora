@@ -58,11 +58,20 @@ module "rds_cluster" {
 
 ## Database credentials
 
-The module can optionally create database credentials, for example a login per app so apps don't use the master user.
-Pass a list of usernames as `credentials`. For each one the module creates a database user with a generated password,
-grants it `credential_privileges` on the database, and stores the credentials in a Secrets Manager secret. The
-`credential_secret_arns` output maps each username to its secret's ARN. Leave `credentials` empty (the default) and
-none of this is created.
+The module can optionally create database credentials, for example a login per app so apps don't use the master user,
+or read-only logins for people. Pass groups of usernames as `credentials`; each group has its own settings:
+
+| Key                       | Default                                    | Description                                                                 |
+|---------------------------|--------------------------------------------|-----------------------------------------------------------------------------|
+| `names`                   | (required)                                 | The database usernames to create.                                           |
+| `name_format`             | `"%s"`                                     | A `format()` string that turns a username into its secret name.            |
+| `privileges`              | `["SELECT", "INSERT", "UPDATE", "DELETE"]` | What the users get on the database (on its tables, for PostgreSQL).         |
+| `recovery_window_in_days` | `30`                                       | Days before a removed secret is deleted. `0` (immediately) or `7` to `30`. |
+
+For each name the module creates a database user with a generated password, grants it the group's privileges, and
+stores the credentials in a Secrets Manager secret. The `credential_secret_arns` output maps each username to its
+secret's ARN. A name can only appear once across all groups. Leave `credentials` empty (the default) and none of this
+is created.
 
 The secret uses the same JSON keys as RDS-managed secrets: `engine`, `host`, `port`, `dbname`, `username` and
 `password`.
@@ -103,8 +112,20 @@ module "rds_cluster" {
 
   # ...the usual cluster settings...
 
-  credentials                   = ["myapp-api", "myapp-worker"]
-  credential_secret_name_format = "%s-db"
+  credentials = [
+    {
+      # App logins: MySQL users "myapp-api" and "myapp-worker", secrets "myapp-api-app-user" and "myapp-worker-app-user"
+      names       = ["myapp-api", "myapp-worker"]
+      name_format = "%s-app-user"
+    },
+    {
+      # Read-only logins for people, with secrets that can be recreated sooner after removal
+      names                   = ["support", "audit"]
+      name_format             = "%s-user"
+      privileges              = ["SELECT"]
+      recovery_window_in_days = 10
+    },
+  ]
 }
 ```
 
@@ -132,8 +153,9 @@ ECS only reads the secret when a task starts, so running tasks keep the old pass
 * The generated passwords are stored in terraform state, so treat your state bucket like it holds secrets (it already
   does if your master password is in there).
 * Removing a username drops the user and schedules its secret for deletion. A secret waiting to be deleted blocks
-  creating a new one with the same name, so set `credential_secret_recovery_window_in_days = 0` for throwaway
-  environments.
+  creating a new one with the same name, so set the group's `recovery_window_in_days = 0` for throwaway environments.
+* Moving a name to a different group keeps its user and secret; only the changed settings are updated. Changing
+  `name_format` renames the secret, which replaces it.
 * To change a password, replace it, e.g. for MySQL
   `terraform apply -replace='module.rds_cluster.module.mysql_credential["myapp-api"].random_password.credential'`,
   then redeploy whatever uses it. Anything still using the old password loses access as soon as the apply finishes.
